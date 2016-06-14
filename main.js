@@ -87,12 +87,15 @@ function constructor(type) {
         if (type == 'css') {
           var lessDir = Path.join(bsDir, 'less');
           var cssFile = new gutil.File({
-            base: opt.base,
-            path: Path.join(file.base, opt.name),
-            cwd: file.cwd,
+            // base: opt.base,
+            path: opt.name,
+            cwd: file.cwd
           });
 
           less.render(data, {paths: [lessDir], compress: opt.compress}, function (e, output) {
+            if (e) {
+              return callback(new gutil.PluginError(PLUGIN_NAME, e));
+            }
             cssFile.contents = new Buffer(output.css);
             callback(null, cssFile);
           });
