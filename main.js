@@ -6,7 +6,7 @@ var gutil = require('gulp-util');
 var Path = require('path');
 var fs = require('fs');
 var less = require('less');
-var uglify = require("uglify-js");
+var uglify = require('uglify-js');
 var bowerConfig = require('bower-config');
 var findConfig = require('find-config');
 var missed  = require('./missed.json');
@@ -23,15 +23,21 @@ function makeBootstrap(configText, type, callback) {
       for (var name in missed.vars)
           config.vars[name] = missed.vars[name];
 
-      for (var name in config.vars)
-          data.push(name + ':  ' + config.vars[name] + ";");
+      for (var name in config.vars) {
+        if (config.vars[name] === '@import') {
+          data.push('@import  "' + name + '";');
+        } else {
+          data.push(name + ':  ' + config.vars[name] + ';');
+        }
+      }
 
       sequence.less.forEach(function(name){
         name = name + '.less';
-        if (config.css.indexOf(name) > -1)
-          data.push('@import "' + name + "\";");
+        if (config.css.indexOf(name) > -1) {
+          data.push('@import "' + name + '";');
+        }
       });
-      data = data.join("\n");
+      data = data.join('\n');
     }
 
     if (type == 'js') {
@@ -49,23 +55,23 @@ function constructor(type) {
     opt = opt || {};
     opt.bower = opt.bower || false;
 
-    if (! opt.base) opt.base = Path.dirname(module.parent.filename);
+    if (!opt.base) opt.base = Path.dirname(module.parent.filename);
 
-    if(!opt.path && !opt.bower) {
+    if (!opt.path && !opt.bower) {
       opt.path = 'node_modules/bootstrap';
       try {
         var resolvedPath = require.resolve('bootstrap');
-        var packagePath = findConfig('package.json', { cwd: resolvedPath });
+        var packagePath = findConfig('package.json', {cwd: resolvedPath});
         opt.path = (packagePath && Path.dirname(packagePath)) || opt.path;
-      } catch(e) { }
-    } else if(!opt.path) {
+      } catch (e) { }
+    } else if (!opt.path) {
       var bc = bowerConfig.create(opt.base).load().toObject();
       opt.path = Path.join(bc.directory, 'bootstrap');
     }
 
     opt.compress = opt.compress || false;
-    if (! opt.name && opt.compress) opt.name = 'bootstrap.min.'+type;
-    if (! opt.name) opt.name = 'bootstrap.'+type;
+    if (!opt.name && opt.compress) opt.name = 'bootstrap.min.'+type;
+    if (!opt.name) opt.name = 'bootstrap.'+type;
 
 
     return through.obj(function (file, encoding, callback){
@@ -92,7 +98,7 @@ function constructor(type) {
             cwd: file.cwd
           });
 
-          less.render(data, {paths: [lessDir], compress: opt.compress}, function (e, output) {
+          less.render(data, {paths: [opt.extraPath, opt.base, lessDir]}, function (e, output) {
             if (e) {
               return callback(new gutil.PluginError(PLUGIN_NAME, e));
             }
@@ -106,7 +112,7 @@ function constructor(type) {
           var jsFile = new gutil.File({
             base: opt.base,
             path: Path.join(file.base, opt.name),
-            cwd: file.cwd,
+            cwd: file.cwd
           });
 
           data.forEach(function(name, i){ data[i] = Path.join(jsDir, name); });
@@ -118,7 +124,7 @@ function constructor(type) {
             var jsData = data.map(function(filePath){
               return fs.readFileSync(filePath);
             });
-            jsFile.contents = new Buffer(jsData.join("\n"));
+            jsFile.contents = new Buffer(jsData.join('\n'));
           }
 
           callback(null, jsFile);
